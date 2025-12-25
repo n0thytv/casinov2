@@ -23,7 +23,7 @@ $username = $_SESSION['pending_username'] ?? 'Utilisateur';
 
     <div class="auth-wrapper">
         <div class="auth-bg-anim">
-            <div class="auth-orb orb-1" style="background:var(--warning);"></div>
+            <!-- Background orb removed - was causing visual issues -->
         </div>
 
         <div class="auth-box card" style="text-align: center;">
@@ -40,11 +40,35 @@ $username = $_SESSION['pending_username'] ?? 'Utilisateur';
                 Vous pourrez vous connecter une fois l'accès validé.
             </p>
 
+            <div id="status-message" style="color: var(--success); margin-bottom: 20px; display: none;">
+                ✅ Compte approuvé ! Redirection en cours...
+            </div>
+
             <a href="login.php" class="btn btn-outline">
                 ← RETOUR À L'ACCUEIL
             </a>
         </div>
     </div>
+
+    <!-- Auto-check for account approval -->
+    <script>
+        const username = '<?= htmlspecialchars($username) ?>';
+        
+        // Check every 3 seconds if account was approved
+        setInterval(function() {
+            fetch('api/check_status.php?username=' + encodeURIComponent(username))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.approved) {
+                        document.getElementById('status-message').style.display = 'block';
+                        setTimeout(() => {
+                            window.location.href = 'login.php?approved=1';
+                        }, 1500);
+                    }
+                })
+                .catch(() => {});
+        }, 3000);
+    </script>
 
 </body>
 

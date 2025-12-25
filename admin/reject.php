@@ -30,11 +30,11 @@ try {
     } elseif ($user['status'] !== 'pending') {
         setFlashMessage('warning', 'Cet utilisateur a déjà été traité.');
     } else {
-        // Refuser l'inscription
-        $stmt = $db->prepare('UPDATE users SET status = ? WHERE id = ?');
-        $stmt->execute(['rejected', $user_id]);
+        // Supprimer l'utilisateur pour libérer l'email
+        $stmt = $db->prepare('DELETE FROM users WHERE id = ?');
+        $stmt->execute([$user_id]);
 
-        setFlashMessage('success', 'L\'inscription de "' . $user['twitch_username'] . '" a été refusée.');
+        setFlashMessage('success', 'L\'inscription de "' . $user['twitch_username'] . '" a été refusée et supprimée.');
     }
 } catch (PDOException $e) {
     if (DEBUG_MODE) {

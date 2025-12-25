@@ -2,10 +2,11 @@
 require_once '../../../includes/init.php';
 require_once '../../../includes/blackjack_functions.php';
 
-header('Content-Type: application/json');
+// Note: pas de header JSON ici car ce fichier utilise des redirections HTTP
 
 if (!isLoggedIn() || !isAdmin()) {
-    die(json_encode(['success' => false, 'error' => 'Non autorisé']));
+    header("Location: ../index.php");
+    exit;
 }
 
 $tableId = intval($_POST['table_id'] ?? 0);
@@ -14,7 +15,8 @@ $playerId = intval($_POST['player_id'] ?? 0);
 $action = $_POST['action'] ?? '';
 
 if (!$tableId) {
-    die(json_encode(['success' => false, 'error' => 'Table non trouvée']));
+    header("Location: ../index.php?error=no_table");
+    exit;
 }
 
 $db = getDB();

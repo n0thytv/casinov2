@@ -259,7 +259,8 @@ function getTableState($tableId, $includeHiddenCards = false)
 
     // En mode streameur et pas d'accès aux cartes cachées
     // SAUF si tous les joueurs ont terminé (stand, bust, blackjack) - alors révéler les cartes
-    $allPlayersFinished = true;
+    $allPlayersFinished = false; // Par défaut, cacher les cartes
+
     if ($table['status'] === 'playing') {
         // Vérifier si tous les joueurs ont terminé (à partir des données de la DB directement)
         $stmtCheck = $db->prepare("
@@ -271,7 +272,9 @@ function getTableState($tableId, $includeHiddenCards = false)
         $checkResult = $stmtCheck->fetch();
         $allPlayersFinished = ($checkResult['count'] == 0);
     } else if ($table['status'] === 'finished' || $table['status'] === 'completed') {
-        $allPlayersFinished = true;
+        $allPlayersFinished = true; // Partie terminée, révéler
+    } else if ($table['status'] === 'betting') {
+        $allPlayersFinished = false; // Mises en cours, cacher
     }
 
     // Cacher les cartes seulement si en mode streameur, pas d'accès admin, ET joueurs pas encore terminés

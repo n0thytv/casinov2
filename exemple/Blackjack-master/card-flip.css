@@ -1,0 +1,57 @@
+#parent{
+	height: 200px;
+	width: 200px;
+	border: 5px solid black;
+	perspective: 200px;
+	transition: all .5s;
+}
+
+#threeDChild{
+	border: 5px solid blue;
+	transition: all .5s;
+	height: 190px;
+}
+
+#parent.flip{
+	perspective: 100px;
+}
+
+#threeDChild.flip{
+	transform: rotateY(-180deg);
+}
+
+.card{
+	height: 300px;
+	width: 300px;
+	border: 2px solid black;
+	perspective: 300px;
+	float: left;
+}
+
+.face-holder{
+	height: 300px;
+	width: 300px;
+	position: relative;
+	transition: all .5s;
+	transform-style: preserve-3d;
+}
+
+.card-front, .card-back{
+	position: absolute;
+	top: 0;
+	left: 0;
+	border: 2px solid red;
+	backface-visibility: hidden;
+}
+
+.card-front{
+	transform: rotateY(180deg);
+}
+
+.card-back{
+
+}
+
+.flip, .matched{
+	transform: rotateY(-180deg);
+}

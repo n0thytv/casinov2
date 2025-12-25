@@ -172,15 +172,15 @@ require_once '../../includes/header.php';
                                 <?php if ($card['suit'] === 'hidden'): ?>
                                     ?
                                 <?php else: ?>
-                                    <?= $card['value'] ?>            <?php
-                                                  echo match ($card['suit']) {
-                                                      'hearts' => '♥',
-                                                      'diamonds' => '♦',
-                                                      'clubs' => '♣',
-                                                      'spades' => '♠',
-                                                      default => ''
-                                                  };
-                                                  ?>
+                                    <?= $card['value'] ?>             <?php
+                                                   echo match ($card['suit']) {
+                                                       'hearts' => '♥',
+                                                       'diamonds' => '♦',
+                                                       'clubs' => '♣',
+                                                       'spades' => '♠',
+                                                       default => ''
+                                                   };
+                                                   ?>
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
@@ -189,15 +189,22 @@ require_once '../../includes/header.php';
 
                 <div style="color: var(--text-muted);">
                     Valeur: <strong style="color: white;"><?= $table['dealer_value'] ?></strong>
+                    <?php if ($table['dealer_value'] >= 17): ?>
+                        <span style="color: var(--warning); margin-left: 10px;">⚠️ DOIT RESTER</span>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($table['status'] === 'playing'): ?>
                     <div class="action-buttons">
-                        <form method="POST" action="api/deal_cards.php" style="display: inline;">
-                            <input type="hidden" name="table_id" value="<?= $tableId ?>">
-                            <input type="hidden" name="target" value="dealer">
-                            <button type="submit" class="btn btn-outline">🃏 Tirer une carte</button>
-                        </form>
+                        <?php if ($table['dealer_value'] < 17): ?>
+                            <form method="POST" action="api/deal_cards.php" style="display: inline;">
+                                <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                                <input type="hidden" name="target" value="dealer">
+                                <button type="submit" class="btn btn-outline">🃏 Tirer une carte</button>
+                            </form>
+                        <?php else: ?>
+                            <button class="btn btn-outline" disabled style="opacity: 0.5;">🃏 ≥17 - Ne peut plus tirer</button>
+                        <?php endif; ?>
 
                         <form method="POST" action="api/end_round.php" style="display: inline;">
                             <input type="hidden" name="table_id" value="<?= $tableId ?>">
@@ -214,14 +221,49 @@ require_once '../../includes/header.php';
             <div class="dealer-zone">
                 <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--gold-main);">🎮 CONTRÔLES</h2>
 
-                <?php if ($table['status'] === 'playing' && empty($table['dealer_cards'])): ?>
+                <?php
+                // Calculer la progression de la distribution
+                $playerCount = count($table['players']);
+                $totalCards = 0;
+                foreach ($table['players'] as $p) {
+                    $totalCards += count($p['cards']);
+                }
+                $totalCards += count($table['dealer_cards']);
+                $expectedCards = ($playerCount * 2) + 2;
+                $dealingComplete = $totalCards >= $expectedCards;
+                ?>
+
+                <?php if ($table['status'] === 'playing' && !$dealingComplete && $playerCount > 0): ?>
+                    <div style="margin-bottom: 15px; padding: 15px; background: rgba(255,183,0,0.1); border-radius: 8px;">
+                        <div style="color: var(--warning); font-weight: bold; margin-bottom: 10px;">
+                            📦 DISTRIBUTION: <?= $totalCards ?> / <?= $expectedCards ?> cartes
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div
+                                style="width: <?= ($totalCards / $expectedCards) * 100 ?>%; height: 100%; background: var(--gold-main);">
+                            </div>
+                        </div>
+                    </div>
+
                     <form method="POST" action="api/deal_cards.php">
                         <input type="hidden" name="table_id" value="<?= $tableId ?>">
                         <input type="hidden" name="action" value="initial_deal">
                         <button type="submit" class="btn btn-gold" style="width: 100%; margin-bottom: 15px;">
-                            🃏 DISTRIBUER LES CARTES INITIALES
+                            🃏 DISTRIBUER LA PROCHAINE CARTE
                         </button>
                     </form>
+                <?php elseif ($table['status'] === 'playing' && $dealingComplete): ?>
+                    <div
+                        style="padding: 15px; background: rgba(0,255,127,0.1); border-radius: 8px; text-align: center; margin-bottom: 15px;">
+                        <div style="color: var(--success); font-weight: bold;">✅ Distribution terminée</div>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">
+                            Les joueurs choisissent leurs actions (HIT/STAND/DOUBLE/SPLIT)
+                        </div>
+                    </div>
+                <?php elseif ($table['status'] === 'playing' && $playerCount === 0): ?>
+                    <div style="padding: 15px; background: rgba(255,0,64,0.1); border-radius: 8px; text-align: center;">
+                        <div style="color: var(--danger);">❌ Aucun joueur à la table</div>
+                    </div>
                 <?php endif; ?>
 
                 <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
@@ -267,15 +309,15 @@ require_once '../../includes/header.php';
                             <?php else: ?>
                                 <?php foreach ($player['cards'] as $card): ?>
                                     <div class="card-item <?= $card['suit'] ?>">
-                                        <?= $card['value'] ?>                <?php
-                                                          echo match ($card['suit']) {
-                                                              'hearts' => '♥',
-                                                              'diamonds' => '♦',
-                                                              'clubs' => '♣',
-                                                              'spades' => '♠',
-                                                              default => ''
-                                                          };
-                                                          ?>
+                                        <?= $card['value'] ?>                 <?php
+                                                           echo match ($card['suit']) {
+                                                               'hearts' => '♥',
+                                                               'diamonds' => '♦',
+                                                               'clubs' => '♣',
+                                                               'spades' => '♠',
+                                                               default => ''
+                                                           };
+                                                           ?>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -316,39 +358,37 @@ require_once '../../includes/header.php';
                         </div>
 
                         <?php if ($table['status'] === 'playing' && $player['status'] === 'playing'): ?>
-                            <div class="action-buttons">
-                                <form method="POST" action="api/deal_cards.php" style="display: inline;">
-                                    <input type="hidden" name="table_id" value="<?= $tableId ?>">
-                                    <input type="hidden" name="target" value="player">
-                                    <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
-                                    <button type="submit" class="btn btn-outline" style="padding: 8px 15px;">🃏 HIT</button>
-                                </form>
-
-                                <form method="POST" action="api/player_action.php" style="display: inline;">
-                                    <input type="hidden" name="table_id" value="<?= $tableId ?>">
-                                    <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
-                                    <input type="hidden" name="action" value="stand">
-                                    <button type="submit" class="btn btn-outline" style="padding: 8px 15px;">✋ STAND</button>
-                                </form>
-
-                                <?php if (count($player['cards']) === 2 && !$player['doubled']): ?>
-                                    <form method="POST" action="api/player_action.php" style="display: inline;">
+                            <?php
+                            $pendingAction = $player['pending_action'] ?? null;
+                            $actionLabels = [
+                                'hit' => '🃏 DEMANDE UNE CARTE',
+                                'stand' => '✋ VEUT RESTER',
+                                'double' => '💰 VEUT DOUBLER',
+                                'split' => '✌️ VEUT SPLIT'
+                            ];
+                            ?>
+                            <?php if ($pendingAction): ?>
+                                <div
+                                    style="margin-top: 10px; padding: 15px; background: rgba(255,215,0,0.2); border: 2px solid var(--gold-main); border-radius: 8px; text-align: center;">
+                                    <div style="color: var(--gold-main); font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">
+                                        <?= $actionLabels[$pendingAction] ?>
+                                    </div>
+                                    <form method="POST" action="api/execute_action.php" style="display: inline;">
                                         <input type="hidden" name="table_id" value="<?= $tableId ?>">
                                         <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
-                                        <input type="hidden" name="action" value="double">
-                                        <button type="submit" class="btn btn-gold" style="padding: 8px 15px;">💰 DOUBLE</button>
+                                        <button type="submit" class="btn btn-gold" style="padding: 10px 30px;">
+                                            ✅ EXÉCUTER
+                                        </button>
                                     </form>
-                                <?php endif; ?>
-
-                                <?php if (canSplit($player['cards']) && !$player['has_split']): ?>
-                                    <form method="POST" action="api/player_action.php" style="display: inline;">
-                                        <input type="hidden" name="table_id" value="<?= $tableId ?>">
-                                        <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
-                                        <input type="hidden" name="action" value="split">
-                                        <button type="submit" class="btn btn-primary" style="padding: 8px 15px;">✌️ SPLIT</button>
-                                    </form>
-                                <?php endif; ?>
-                            </div>
+                                </div>
+                            <?php else: ?>
+                                <div
+                                    style="margin-top: 10px; padding: 10px; background: rgba(100,100,100,0.2); border-radius: 6px; text-align: center;">
+                                    <span style="color: var(--text-muted); font-size: 0.85rem;">
+                                        ⏳ En attente du choix du joueur...
+                                    </span>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
 
                         <?php if ($player['has_split']): ?>
@@ -360,15 +400,15 @@ require_once '../../includes/header.php';
                                     $splitCards = json_decode($player['split_cards'], true) ?? [];
                                     foreach ($splitCards as $card): ?>
                                         <div class="card-item <?= $card['suit'] ?>">
-                                            <?= $card['value'] ?>                <?php
-                                                              echo match ($card['suit']) {
-                                                                  'hearts' => '♥',
-                                                                  'diamonds' => '♦',
-                                                                  'clubs' => '♣',
-                                                                  'spades' => '♠',
-                                                                  default => ''
-                                                              };
-                                                              ?>
+                                            <?= $card['value'] ?>                 <?php
+                                                               echo match ($card['suit']) {
+                                                                   'hearts' => '♥',
+                                                                   'diamonds' => '♦',
+                                                                   'clubs' => '♣',
+                                                                   'spades' => '♠',
+                                                                   default => ''
+                                                               };
+                                                               ?>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -386,10 +426,9 @@ require_once '../../includes/header.php';
 </main>
 
 <script>
-    // Auto-refresh toutes les 3 secondes
+    // Auto-refresh toutes les 3 secondes pour voir les actions des joueurs
     setInterval(() => {
-        // Pour l'instant, simple refresh - sera remplacé par SSE
-        // location.reload();
+        location.reload();
     }, 3000);
 </script>
 

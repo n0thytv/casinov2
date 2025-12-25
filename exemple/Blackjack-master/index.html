@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>BlackJack</title>
+	<!-- link to local Bootstrap -->
+	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+	<!-- link to custom css -->
+	<link rel="stylesheet" type="text/css" href="css/styles.css">
+	<!-- link to local jquery and jQueryUI-->
+	<script src="js/jquery.min.js" type="text/javascript"></script>
+	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+	<!-- and Bootstrap JS -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<!-- link to custom js -->
+	<script src="js/scripts.js" type="text/javascript"></script>
+</head>
+<body>
+	<div class="container-fluid player-bar">
+		<div class="row">
+			<div class="col-sm-4 header-left">
+				<span id="minTitle">Table Minimum: $5</span>			
+			</div>
+			<div class="col-sm-4 header-right">
+				<span id="totalTitle">Player Total: &nbsp;</span>
+				<div id="playerBank">
+					$<span id="bankAmount">1000</span>
+				</div>				
+			</div>
+		</div>
+	</div>
+	<div class="container">
+		<div class="row">
+			<!-- Dealer Total -->
+			<div class="col-sm-2 dealer-total">
+				Dealer Total: <span class="dealer-total-number">0</span>	
+			</div>
+			<div class="col-sm-8 btn-group btn-group-lg" role="group">		
+				<button class="btn btn-lg btn-secondary deal-button">Deal</button>		
+				<button class="btn btn-lg btn-secondary hit-button">Hit</button>		
+				<button class="btn btn-lg btn-secondary stand-button">Stand</button>		
+				<button class="btn btn-lg btn-secondary double-button">Double</button>
+			</div>
+		</div>
+		<div class="row">
+			<!-- Player Total -->
+			<div class="col-sm-2 player-total">
+				Player Total: <span class="player-total-number">0</span>	
+			</div>
+			<div class="col-sm-2 player-total split-total">
+				Split Total: <span class="second-pot split-total-number">0</span>
+			</div>
+			<div class="col-sm-12 buttons-lower">
+				<button class="btn btn-lg btn-secondary reset-button">Reset Board</button>
+				<button class="btn btn-lg btn-secondary insurance-button">Take Insurance</button>
+				<button class="btn btn-lg btn-secondary split-button">Split</button>
+				<div class="col-sm-12 btn-group split-group btn-group-lg" role="group">		
+					<button class="btn btn-lg btn-secondary hit-left">Hit Left</button>		
+					<button class="btn btn-lg btn-secondary hit-right">Hit Right</button>		
+				</div>
+			</div>
+			<div class="col-sm-1 insurance-amount">
+				<p id="insurance bet-total">Insurance:</p>
+				<p id="insurance-amount">$$$</p>
+			</div>
+			<div class="col-sm-1 bet-amount">
+				<p id="bet-total">Current Bet:</p>
+				<p id="bet-amount">$$$</p>
+				<button id="bet-reset" class="bet-reset-button">Reset Bet</button>
+			</div>
+			<div class="col-sm-1 split-amount">
+				<p id="split bet-total">Split Bet:</p>
+				<p id="split-amount">$$$</p>
+			</div>
+		</div>
+		<div class="row">
+			<div id="arm-rest">
+				<img id="leather" src="images/dark-leather.png">
+				<img id="wood" src="images/dark-wood.png">
+				<!-- 	the table -->
+				<div class="the-table col-sm-10 col-sm-offset-1">
+
+					<div class="row">
+						<!-- The dealer -->
+						<div class="col-sm-12 dealer-hand-wrapper">
+							<div class="col-sm-9 dealer-cards"></div>
+						</div>
+					</div>
+					<div class="row">
+						<!-- Player -->
+						<div class="col-sm-12 player-hand-wrapper">
+							<div class="col-sm-9 player-cards"></div>
+						</div>
+						<!-- Split -->
+						<div class="col-sm-12 split-hand-wrapper">
+							<div class="col-sm-9 split-cards"></div>
+						</div>
+					</div>
+					<div id="betArea">Place Bets Here
+						<div id="dropArea"></div>
+					</div>
+					<div id="cup-holder"></div>
+					<div id="deckOfCards">
+						<img class="deck-card deck-card0" src="images/the-deck.png">
+					</div>
+					<div id="fiveChip">
+						<img id="five1" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five2" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five3" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five4" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five5" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five6" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five7" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five8" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five9" class="activeChip fiveChip" src="images/5Chip.png">
+						<img id="five10" class="activeChip fiveChip" src="images/5Chip.png">
+						<div id="fiveChips">
+							<img src="images/fiveChips.png">
+						</div>
+					</div>
+					<div id="tenChip">
+						<img id="ten1" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten2" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten3" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten4" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten5" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten6" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten7" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten8" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten9" class="activeChip tenChip" src="images/10Chip.png">
+						<img id="ten10" class="activeChip tenChip" src="images/10Chip.png">
+						<div id="tenChips">
+							<img src="images/tenChips.png">
+						</div>
+					</div>
+					<div id="twentyFiveChip">
+						<img id="twentyFive1" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive2" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive3" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive4" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive5" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive6" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive7" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive8" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive9" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<img id="twentyFive10" class="activeChip twentyFiveChip" src="images/25Chip.png">
+						<div id="twentyFiveChips">
+							<img src="images/twentyFiveChips.png">
+						</div>
+					</div>
+					<div id="hundredChip">
+						<img id="hundred1" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred2" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred3" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred4" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred5" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred6" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred7" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred8" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred9" class="activeChip hundredChip" src="images/100Chip.png">
+						<img id="hundred10" class="activeChip hundredChip" src="images/100Chip.png">
+						<div id="hundredChips">
+							<img src="images/hundredChips.png">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="playerWins" tabindex="-1" role="dialog" aria-labelledby="playerWins">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="playerWinsTitle">You win!</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Congratulations!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="playerBusts" tabindex="-1" role="dialog" aria-labelledby="playerBusts">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="playerBustsTitle">You bust.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Better luck next time!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="dealerWins" tabindex="-1" role="dialog" aria-labelledby="dealerWins">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="dealerWinsTitle">Dealer Wins.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Better luck next time!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="dealerBusts" tabindex="-1" role="dialog" aria-labelledby="dealerBusts">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="dealerBustsTitle">Dealer busts. You win!</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Congratulations!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="pushTie" tabindex="-1" role="dialog" aria-labelledby="pushTie">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="pushTieTitle">Push. Dealer wins ties.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Better luck next time!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="playerBlackJack" tabindex="-1" role="dialog" aria-labelledby="playerBlackJack">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="playerBlackJackTitle">Black Jack!</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Congratulations!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="playerLose" tabindex="-1" role="dialog" aria-labelledby="playerLose">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="playerLoseTitle">You are out of money.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Thank you for playing, and have a nice day!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="halfBust" tabindex="-1" role="dialog" aria-labelledby="halfBust">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="halfBustTitle">One bust, One win.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Not half bad!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="halfWin" tabindex="-1" role="dialog" aria-labelledby="halfWin">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="halfWinTitle">One win, One loss.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Not half bad!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="dealerBlackJack" tabindex="-1" role="dialog" aria-labelledby="dealerBlackJack">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="dealerBlackJackTitle">Dealer wins with Blackjack.</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Too bad! Not your lucky day.</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="insuranceWin" tabindex="-1" role="dialog" aria-labelledby="insuranceWin">
+		 <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      	<div class="modal-header">
+		        	<h1 class="modal-title text-center" id="insuranceWinTitle">Insurance payed 2 to 1!</h1>
+		      	</div>
+		      	<div class="modal-body text-center">
+					<h2>Great job playing the odds!</h2>
+		      	</div>
+		    </div>
+		</div>
+	</div>
+</body>
+</html>

@@ -59,7 +59,7 @@ switch ($action) {
         updateCasinoBalance($player['bet_amount'], $tableId, $player['user_id'], 'double', "Double BJ: {$player['bet_amount']}");
 
         // Tirer une carte
-        $newCard = createDeck()[0];
+        $newCard = drawCardFromTable($tableId);
         $cards[] = $newCard;
         $handValue = calculateHandValue($cards);
         $status = $handValue > 21 ? 'bust' : 'stand'; // Après double, on s'arrête automatiquement

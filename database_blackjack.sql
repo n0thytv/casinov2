@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS blackjack_players (
     cards JSON DEFAULT NULL,                 -- Cartes du joueur (main principale)
     status ENUM('betting', 'waiting', 'playing', 'stand', 'bust', 'blackjack', 'win', 'lose', 'push') DEFAULT 'betting',
     doubled BOOLEAN DEFAULT FALSE,           -- A doublé sa mise
+    pending_action ENUM('hit', 'stand', 'double', 'split') DEFAULT NULL, -- Action demandée par le joueur
     -- SPLIT SUPPORT
     has_split BOOLEAN DEFAULT FALSE,         -- Le joueur a splitté
     split_cards JSON DEFAULT NULL,           -- Cartes de la 2ème main (après split)

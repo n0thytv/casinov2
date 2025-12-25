@@ -22,12 +22,15 @@
                     <span class="logo-text">N0THY CASINO</span>
                 </a>
 
-                <nav class="nav-links">
-                    <!-- Liens de navigation futurs -->
+                <nav class="nav-links" style="display: flex; gap: 20px;">
+                    <a href="<?= SITE_URL ?>/games/blackjack/lobby.php"
+                        style="color: var(--gold-main); font-weight: 600; font-size: 0.9rem;">🃏 BLACKJACK</a>
                 </nav>
 
                 <div class="nav-user">
                     <?php if (isAdmin()): ?>
+                        <a href="<?= SITE_URL ?>/admin/blackjack/" class="btn btn-outline btn-sm" style="font-size: 0.7rem;">🃏
+                            BJ ADMIN</a>
                         <a href="<?= SITE_URL ?>/admin/" class="btn btn-outline btn-sm" style="font-size: 0.7rem;">ADMIN
                             PANEL</a>
                     <?php endif; ?>

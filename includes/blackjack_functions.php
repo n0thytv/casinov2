@@ -127,6 +127,55 @@ function createDeck()
 }
 
 /**
+ * Tirer une carte unique (non déjà distribuée) pour une table
+ * @param int $tableId ID de la table
+ * @return array La carte tirée
+ */
+function drawCardFromTable($tableId)
+{
+    $table = getTableState($tableId, true);
+    if (!$table) {
+        return createDeck()[0]; // Fallback
+    }
+
+    // Collecter toutes les cartes déjà en jeu
+    $usedCards = [];
+
+    // Cartes du croupier
+    foreach ($table['dealer_cards'] ?? [] as $card) {
+        if ($card['suit'] !== 'hidden') {
+            $usedCards[] = $card['suit'] . '-' . $card['value'];
+        }
+    }
+
+    // Cartes des joueurs
+    foreach ($table['players'] ?? [] as $player) {
+        foreach ($player['cards'] ?? [] as $card) {
+            $usedCards[] = $card['suit'] . '-' . $card['value'];
+        }
+    }
+
+    // Créer un deck et exclure les cartes utilisées
+    $fullDeck = createDeck();
+    $availableCards = [];
+
+    foreach ($fullDeck as $card) {
+        $cardKey = $card['suit'] . '-' . $card['value'];
+        if (!in_array($cardKey, $usedCards)) {
+            $availableCards[] = $card;
+        }
+    }
+
+    // Si le deck est vide (improbable), refaire un shuffle complet
+    if (empty($availableCards)) {
+        return createDeck()[0];
+    }
+
+    // Retourner une carte aléatoire parmi les disponibles
+    return $availableCards[array_rand($availableCards)];
+}
+
+/**
  * Calculer la valeur d'une main
  */
 function calculateHandValue($cards)
@@ -204,11 +253,29 @@ function getTableState($tableId, $includeHiddenCards = false)
     if (!$table)
         return null;
 
-    // Décoder les cartes du croupier
-    $table['dealer_cards'] = json_decode($table['dealer_cards'], true) ?? [];
+    // Décoder les cartes du croupier (gérer le cas null)
+    $dealerCardsJson = $table['dealer_cards'] ?? '[]';
+    $table['dealer_cards'] = json_decode($dealerCardsJson, true) ?? [];
 
     // En mode streameur et pas d'accès aux cartes cachées
-    if ($table['streamer_mode'] && !$includeHiddenCards && count($table['dealer_cards']) > 1) {
+    // SAUF si tous les joueurs ont terminé (stand, bust, blackjack) - alors révéler les cartes
+    $allPlayersFinished = true;
+    if ($table['status'] === 'playing') {
+        // Vérifier si tous les joueurs ont terminé (à partir des données de la DB directement)
+        $stmtCheck = $db->prepare("
+            SELECT COUNT(*) as count 
+            FROM blackjack_players 
+            WHERE table_id = ? AND status IN ('playing', 'betting', 'waiting')
+        ");
+        $stmtCheck->execute([$tableId]);
+        $checkResult = $stmtCheck->fetch();
+        $allPlayersFinished = ($checkResult['count'] == 0);
+    } else if ($table['status'] === 'finished' || $table['status'] === 'completed') {
+        $allPlayersFinished = true;
+    }
+
+    // Cacher les cartes seulement si en mode streameur, pas d'accès admin, ET joueurs pas encore terminés
+    if ($table['streamer_mode'] && !$includeHiddenCards && count($table['dealer_cards']) > 1 && !$allPlayersFinished) {
         // Cacher toutes les cartes sauf la première
         $visibleCards = [$table['dealer_cards'][0]];
         for ($i = 1; $i < count($table['dealer_cards']); $i++) {
@@ -233,7 +300,8 @@ function getTableState($tableId, $includeHiddenCards = false)
     $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($players as &$player) {
-        $player['cards'] = json_decode($player['cards'], true) ?? [];
+        $cardsJson = $player['cards'] ?? '[]';
+        $player['cards'] = json_decode($cardsJson, true) ?? [];
         $player['hand_value'] = calculateHandValue($player['cards']);
     }
 
@@ -302,4 +370,87 @@ function resolveRound($tableId)
     $stmt->execute([$tableId]);
 
     return true;
+}
+
+/**
+ * Vérifier si tous les joueurs ont terminé (stand ou bust)
+ */
+function isAllPlayersFinished($tableId)
+{
+    $db = getDB();
+
+    // Compter les joueurs qui n'ont pas encore terminé
+    $stmt = $db->prepare("
+        SELECT COUNT(*) as count 
+        FROM blackjack_players 
+        WHERE table_id = ? AND status IN ('playing', 'betting', 'waiting')
+    ");
+    $stmt->execute([$tableId]);
+    $result = $stmt->fetch();
+
+    return $result['count'] == 0;
+}
+
+/**
+ * Vérifier et clore automatiquement la manche si tous les joueurs ont terminé
+ */
+function checkAndAutoCloseRound($tableId)
+{
+    if (!isAllPlayersFinished($tableId)) {
+        return false;
+    }
+
+    $db = getDB();
+    $table = getTableState($tableId, true);
+
+    if (!$table || $table['status'] !== 'playing') {
+        return false;
+    }
+
+    // Vérifier si tous les joueurs ont bust - dans ce cas, le dealer gagne automatically
+    $allPlayersBusted = true;
+    foreach ($table['players'] as $player) {
+        if ($player['status'] !== 'bust') {
+            $allPlayersBusted = false;
+            break;
+        }
+    }
+
+    // Si tous les joueurs ont bust, résoudre immédiatement (dealer gagne)
+    if ($allPlayersBusted) {
+        return resolveRound($tableId);
+    }
+
+    // Sinon, vérifier si le croupier a au moins 17 (condition pour terminer)
+    $dealerValue = $table['dealer_value'];
+    if ($dealerValue < 17) {
+        // Le croupier doit encore tirer
+        return false;
+    }
+
+    // Résoudre automatiquement la manche
+    return resolveRound($tableId);
+}
+
+/**
+ * Vérifier si la distribution initiale est terminée
+ */
+function isDealingComplete($tableId)
+{
+    $table = getTableState($tableId, true);
+    if (!$table)
+        return false;
+
+    $playerCount = count($table['players']);
+    if ($playerCount == 0)
+        return false;
+
+    $totalCards = 0;
+    foreach ($table['players'] as $p) {
+        $totalCards += count($p['cards']);
+    }
+    $totalCards += count($table['dealer_cards']);
+    $expectedCards = ($playerCount * 2) + 2;
+
+    return $totalCards >= $expectedCards;
 }

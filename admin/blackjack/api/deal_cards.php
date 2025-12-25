@@ -26,31 +26,49 @@ if (!$table || $table['status'] !== 'playing') {
     exit;
 }
 
-// Distribution initiale
+// Distribution initiale : une seule carte à la fois
 if ($action === 'initial_deal') {
-    $deck = createDeck();
-    $deckIndex = 0;
+    // Compter les cartes déjà distribuées
+    $totalCards = 0;
+    foreach ($table['players'] as $player) {
+        $totalCards += count($player['cards']);
+    }
+    $totalCards += count($table['dealer_cards']);
 
-    // 2 cartes pour chaque joueur
-    $stmt = $db->prepare("SELECT id FROM blackjack_players WHERE table_id = ? ORDER BY seat_number");
-    $stmt->execute([$tableId]);
-    $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $playerCount = count($table['players']);
+    $expectedCards = ($playerCount * 2) + 2; // 2 cartes par joueur + 2 pour le croupier
 
-    foreach ($players as $player) {
-        $playerCards = [$deck[$deckIndex++], $deck[$deckIndex++]];
-        $cardsJson = json_encode($playerCards);
-
-        // Vérifier blackjack
-        $status = isBlackjack($playerCards) ? 'blackjack' : 'playing';
-
-        $stmt2 = $db->prepare("UPDATE blackjack_players SET cards = ?, status = ? WHERE id = ?");
-        $stmt2->execute([$cardsJson, $status, $player['id']]);
+    if ($totalCards >= $expectedCards) {
+        header("Location: ../manage_table.php?id=$tableId&error=deal_complete");
+        exit;
     }
 
-    // 2 cartes pour le croupier
-    $dealerCards = [$deck[$deckIndex++], $deck[$deckIndex++]];
-    $stmt = $db->prepare("UPDATE blackjack_tables SET dealer_cards = ?, current_player_seat = 1 WHERE id = ?");
-    $stmt->execute([json_encode($dealerCards), $tableId]);
+    // Déterminer à qui donner la prochaine carte
+    // Ordre: Joueur1, Joueur2, ..., Croupier, Joueur1, Joueur2, ..., Croupier
+    $round = intval($totalCards / ($playerCount + 1)); // 0 ou 1
+    $position = $totalCards % ($playerCount + 1);
+
+    $newCard = drawCardFromTable($tableId);
+
+    if ($position < $playerCount) {
+        // Donner au joueur
+        $targetPlayer = $table['players'][$position];
+        $cards = $targetPlayer['cards'];
+        $cards[] = $newCard;
+
+        // Vérifier blackjack après 2 cartes
+        $status = (count($cards) === 2 && isBlackjack($cards)) ? 'blackjack' : 'playing';
+
+        $stmt = $db->prepare("UPDATE blackjack_players SET cards = ?, status = ? WHERE id = ?");
+        $stmt->execute([json_encode($cards), $status, $targetPlayer['id']]);
+    } else {
+        // Donner au croupier
+        $dealerCards = $table['dealer_cards'];
+        $dealerCards[] = $newCard;
+
+        $stmt = $db->prepare("UPDATE blackjack_tables SET dealer_cards = ? WHERE id = ?");
+        $stmt->execute([json_encode($dealerCards), $tableId]);
+    }
 
     header("Location: ../manage_table.php?id=$tableId");
     exit;
@@ -58,20 +76,45 @@ if ($action === 'initial_deal') {
 
 // Tirer une carte pour le croupier
 if ($target === 'dealer') {
+    // Vérifier si la distribution initiale est terminée
+    if (!isDealingComplete($tableId)) {
+        header("Location: ../manage_table.php?id=$tableId&error=dealing_not_complete");
+        exit;
+    }
+
+    // Vérifier si tous les joueurs ont terminé leur tour
+    if (!isAllPlayersFinished($tableId)) {
+        header("Location: ../manage_table.php?id=$tableId&error=players_not_finished");
+        exit;
+    }
+
     $dealerCards = $table['dealer_cards'];
-    $newCard = createDeck()[0]; // Nouvelle carte aléatoire
+    $dealerValue = calculateHandValue($dealerCards);
+
+    // Vérifier si le croupier peut encore tirer (< 17)
+    if ($dealerValue >= 17) {
+        header("Location: ../manage_table.php?id=$tableId&error=dealer_must_stand");
+        exit;
+    }
+
+    $newCard = drawCardFromTable($tableId);
     $dealerCards[] = $newCard;
 
     $stmt = $db->prepare("UPDATE blackjack_tables SET dealer_cards = ? WHERE id = ?");
     $stmt->execute([json_encode($dealerCards), $tableId]);
 
+    // Vérifier si le croupier a >= 17, si oui, auto-clore la manche
+    $newValue = calculateHandValue($dealerCards);
+    if ($newValue >= 17) {
+        checkAndAutoCloseRound($tableId);
+    }
+
     header("Location: ../manage_table.php?id=$tableId");
     exit;
 }
 
-// Tirer une carte pour un joueur
+// Tirer une carte pour un joueur (admin distribue)
 if ($target === 'player' && $playerId) {
-    // Récupérer le joueur
     $stmt = $db->prepare("SELECT * FROM blackjack_players WHERE id = ? AND table_id = ?");
     $stmt->execute([$playerId, $tableId]);
     $player = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -81,8 +124,9 @@ if ($target === 'player' && $playerId) {
         exit;
     }
 
-    $cards = json_decode($player['cards'], true) ?? [];
-    $newCard = createDeck()[0];
+    $cardsJson = $player['cards'] ?? '[]';
+    $cards = json_decode($cardsJson, true) ?? [];
+    $newCard = drawCardFromTable($tableId);
     $cards[] = $newCard;
 
     $handValue = calculateHandValue($cards);

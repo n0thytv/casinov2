@@ -1,0 +1,339 @@
+/* N0THY CASINO - Blackjack CSS 3D Table Styles */
+/* Enhanced version with better centering and visuals */
+
+/* Table Container */
+.blackjack-3d-container {
+    position: relative;
+    width: 100%;
+    height: 550px;
+    background: linear-gradient(180deg, #0a0a1a 0%, #151530 40%, #0a0a1a 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The Felt Table */
+.blackjack-table {
+    position: relative;
+    width: 700px;
+    height: 420px;
+    background-image: url('../images/blackjack-table.png');
+    background-size: cover;
+    background-position: center;
+    border-radius: 20px 20px 50% 50%;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 100px rgba(0, 100, 0, 0.2),
+        inset 0 0 50px rgba(0, 0, 0, 0.3);
+    transform: perspective(1000px) rotateX(35deg) translateY(20px);
+    transform-origin: center center;
+}
+
+/* Card Areas */
+.dealer-area {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 10;
+}
+
+.player-areas {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 80px;
+    z-index: 10;
+}
+
+.player-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.player-cards {
+    display: flex;
+    position: relative;
+}
+
+.player-cards .card {
+    margin-left: -25px;
+    transition: transform 0.2s ease;
+}
+
+.player-cards .card:first-child {
+    margin-left: 0;
+}
+
+.player-cards .card:hover {
+    transform: translateY(-8px) rotate(-2deg);
+    z-index: 20;
+}
+
+/* Cards - scoped to blackjack container only */
+.blackjack-3d-container .card {
+    width: 65px;
+    height: 95px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    box-shadow:
+        3px 5px 15px rgba(0, 0, 0, 0.4),
+        0 0 1px rgba(0, 0, 0, 0.8);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.blackjack-3d-container .card.face-down {
+    background: linear-gradient(145deg, #1a237e 0%, #303f9f 50%, #1a237e 100%);
+    border: 2px solid #ffd700;
+}
+
+.blackjack-3d-container .card.face-down::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        repeating-linear-gradient(45deg,
+            transparent,
+            transparent 10px,
+            rgba(255, 215, 0, 0.1) 10px,
+            rgba(255, 215, 0, 0.1) 20px),
+        repeating-linear-gradient(-45deg,
+            transparent,
+            transparent 10px,
+            rgba(255, 215, 0, 0.1) 10px,
+            rgba(255, 215, 0, 0.1) 20px);
+}
+
+.blackjack-3d-container .card.face-down::after {
+    content: '♠';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffd700;
+    font-size: 28px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.blackjack-3d-container .card .card-value {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.blackjack-3d-container .card .card-suit-small {
+    position: absolute;
+    top: 22px;
+    left: 6px;
+    font-size: 14px;
+}
+
+.blackjack-3d-container .card .card-suit-large {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    opacity: 0.9;
+}
+
+.blackjack-3d-container .card .card-value-bottom {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    transform: rotate(180deg);
+    line-height: 1;
+}
+
+.blackjack-3d-container .card .card-suit-bottom {
+    position: absolute;
+    bottom: 22px;
+    right: 6px;
+    font-size: 14px;
+    transform: rotate(180deg);
+}
+
+.blackjack-3d-container .card.red {
+    color: #d40000;
+}
+
+.blackjack-3d-container .card.black {
+    color: #1a1a1a;
+}
+
+/* Chip Stack - scoped to blackjack container */
+.blackjack-3d-container .chip-stack {
+    position: relative;
+    width: 50px;
+    height: 60px;
+    margin-top: 5px;
+}
+
+.blackjack-3d-container .chip-stack .chip {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.5),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    border: 3px dashed rgba(255, 255, 255, 0.5);
+}
+
+.blackjack-3d-container .chip-5 {
+    background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+}
+
+.blackjack-3d-container .chip-10 {
+    background: radial-gradient(circle at 30% 30%, #4488ff, #0044cc);
+}
+
+.blackjack-3d-container .chip-25 {
+    background: radial-gradient(circle at 30% 30%, #44cc44, #008800);
+}
+
+.blackjack-3d-container .chip-50 {
+    background: radial-gradient(circle at 30% 30%, #ff8844, #cc5500);
+}
+
+.blackjack-3d-container .chip-100 {
+    background: radial-gradient(circle at 30% 30%, #444444, #111111);
+    color: #ffd700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+/* Player Info - scoped to blackjack container */
+.blackjack-3d-container .player-info {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.85), rgba(20, 20, 40, 0.9));
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 11px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.blackjack-3d-container .player-info .username {
+    font-weight: bold;
+    color: #ffd700;
+    font-size: 12px;
+}
+
+.blackjack-3d-container .player-info .hand-value {
+    color: #4ade80;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+/* Dealer Info - scoped to blackjack container */
+.blackjack-3d-container .dealer-info {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 50, 0.95));
+    color: #ffd700;
+    padding: 10px 25px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    z-index: 20;
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Accessories */
+.card-shoe {
+    position: absolute;
+    right: 30px;
+    top: 80px;
+    width: 70px;
+    height: 45px;
+    background: linear-gradient(180deg, #333, #111);
+    border-radius: 5px;
+    box-shadow: 3px 5px 15px rgba(0, 0, 0, 0.6);
+    z-index: 5;
+    border: 1px solid #444;
+}
+
+.discard-tray {
+    position: absolute;
+    left: 30px;
+    top: 80px;
+    width: 55px;
+    height: 35px;
+    background: linear-gradient(180deg, rgba(200, 50, 50, 0.8), rgba(120, 30, 30, 0.8));
+    border-radius: 5px;
+    box-shadow: 3px 5px 15px rgba(0, 0, 0, 0.6);
+    z-index: 5;
+    border: 1px solid rgba(255, 100, 100, 0.3);
+}
+
+/* Animation for dealing cards */
+@keyframes dealCard {
+    0% {
+        transform: translateX(250px) translateY(-80px) rotate(15deg) scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0) translateY(0) rotate(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.blackjack-3d-container .card.dealing {
+    animation: dealCard 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Winner animation */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.2);
+    }
+}
+
+.player-area.winner {
+    animation: pulse 0.5s ease-in-out 3;
+}
+
+/* Glow effect for active player */
+.player-area.active .player-info {
+    border-color: #4ade80;
+    box-shadow: 0 0 15px rgba(74, 222, 128, 0.5);
+}

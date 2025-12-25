@@ -1,0 +1,554 @@
+/* =========================================
+   N0THY CASINO V4 - HYBRID LUXURY
+   Theme: Gold & Violet Blend (High Contrast)
+   ========================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@600;800&display=swap');
+
+:root {
+    /* --- Palette Hybride --- */
+
+    /* Fonds Noir Profond */
+    --bg-deep: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-glass: rgba(15, 10, 20, 0.85);
+    /* Légère teinte violette dans le noir */
+
+    /* Couleurs Principales */
+    --violet-main: #7b00ff;
+    /* Violet Royal */
+    --violet-glow: #e0b0ff;
+    /* Lueur Lavande */
+
+    --gold-main: #FFD700;
+    /* Or Pur */
+    --gold-dark: #B8860B;
+    /* Or Vieilli */
+    --gold-glow: #fffacd;
+    /* Lueur Dorée */
+
+    /* Texte */
+    --text-main: #ffffff;
+    --text-gold: #FFD700;
+    --text-muted: #b0b0b0;
+
+    /* État */
+    --success: #00ff7f;
+    --danger: #ff0040;
+    --warning: #ffb700;
+
+    /* --- Design System --- */
+    --font-heading: 'Orbitron', sans-serif;
+    /* Tech / Futuriste */
+    --font-serif: 'Playfair Display', serif;
+    /* Luxe / Élégance */
+    --font-body: 'Montserrat', sans-serif;
+
+    --radius-lg: 12px;
+    --radius-sm: 4px;
+
+    /* Gradients Signature */
+    --grad-royal: linear-gradient(135deg, var(--violet-main) 0%, #4b0082 100%);
+    --grad-gold: linear-gradient(135deg, var(--gold-main) 0%, var(--gold-dark) 100%);
+    --grad-hybrid: linear-gradient(45deg, var(--violet-main), var(--gold-main));
+
+    /* Ombres */
+    --glow-violet: 0 0 20px rgba(123, 0, 255, 0.3);
+    --glow-gold: 0 0 20px rgba(255, 215, 0, 0.3);
+    --border-gold: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+/* =========================================
+   RESET & BASE
+   ========================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-deep);
+    /* Pattern de fond très subtil luxe */
+    background-image: radial-gradient(circle at 50% 0%, #1a0b2e 0%, #000000 70%);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gold-dark);
+}
+
+/* =========================================
+   TYPOGRAPHIE
+   ========================================= */
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    /* Unify weight for cleaner look */
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-main);
+}
+
+h1 {
+    font-size: 2.8rem;
+}
+
+h1 span {
+    color: var(--gold-main);
+}
+
+/* Mots clés en or */
+
+a {
+    color: var(--gold-main);
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+a:hover {
+    color: var(--violet-glow);
+    text-shadow: 0 0 10px var(--violet-main);
+}
+
+/* =========================================
+   UI COMPONENTS
+   ========================================= */
+
+/* --- Card Luxueuse --- */
+.card {
+    background: var(--bg-glass);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Bordure discrète par défaut */
+    border-top: 1px solid var(--gold-main);
+    /* Accent Gold Top */
+    border-bottom: 1px solid var(--violet-main);
+    /* Accent Violet Bottom */
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 15px 50px rgba(0, 0, 0, 0.9),
+        0 0 30px rgba(123, 0, 255, 0.15);
+    /* Lueur violette subtile au survol */
+}
+
+/* --- Boutons Hybrides --- */
+.btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 28px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Bouton Principal: Violet avec Bordure Or */
+.btn-primary {
+    background: var(--grad-royal);
+    /* Fond Violet Royal */
+    color: #fff;
+    border: 1px solid transparent;
+    box-shadow: var(--glow-violet);
+    position: relative;
+    z-index: 1;
+}
+
+/* Effet bordure or au survol */
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    border-radius: var(--radius-sm);
+    background: var(--grad-gold);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: transparent;
+    box-shadow: var(--glow-gold);
+}
+
+.btn-primary:hover::before {
+    opacity: 1;
+}
+
+
+/* Bouton Secondaire: Or avec texte Noir */
+.btn-gold {
+    background: var(--grad-gold);
+    color: #000;
+    text-shadow: none;
+    font-weight: 800;
+    box-shadow: var(--glow-gold);
+}
+
+.btn-gold:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-muted);
+}
+
+.btn-outline:hover {
+    border-color: var(--text-main);
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-success {
+    background: transparent;
+    border: 1px solid var(--success);
+    color: var(--success);
+}
+
+.btn-success:hover {
+    background: var(--success);
+    color: #000;
+    box-shadow: 0 0 15px var(--success);
+}
+
+.btn-danger {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
+.btn-danger:hover {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 0 15px var(--danger);
+}
+
+.btn-logout {
+    border: 1px solid rgba(255, 0, 64, 0.3);
+    color: rgba(255, 0, 64, 0.8);
+    background: rgba(20, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+.btn-logout:hover {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 0 15px var(--danger);
+    border-color: var(--danger);
+}
+
+/* --- Formulaires Luxe --- */
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-main);
+    font-size: 0.75rem;
+    font-family: var(--font-heading);
+    letter-spacing: 1px;
+}
+
+.form-control {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid #333;
+    border-left: 2px solid var(--gold-main);
+    /* Accent Or à gauche */
+    padding: 15px;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    transition: 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    background: rgba(20, 10, 30, 0.6);
+    border-color: var(--violet-main);
+    /* Devient Violet au focus */
+    box-shadow: 0 0 15px rgba(123, 0, 255, 0.2);
+}
+
+/* =========================================
+   LAYOUT UTILS
+   ========================================= */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    width: 100%;
+}
+
+/* =========================================
+   HEADER & NAV
+   ========================================= */
+
+.main-header {
+    height: 90px;
+    background: rgba(5, 5, 5, 0.95);
+    border-bottom: 1px solid;
+    border-image: linear-gradient(90deg, transparent, var(--violet-main), var(--gold-main), transparent) 1;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+}
+
+.header-inner {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-text {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    font-weight: 800;
+    /* Bold Orbitron */
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.logo-text span {
+    color: transparent;
+    background: var(--grad-hybrid);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.user-badge {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 15px 6px 8px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--grad-royal);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-family: var(--font-heading);
+    border: 1px solid var(--gold-main);
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* =========================================
+   PAGE SPECIFIC
+   ========================================= */
+
+/* --- Auth Wrapper (Orbs restaurés) --- */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Orb 1: Violet */
+.orb-1 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(123, 0, 255, 0.4) 0%, transparent 70%);
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    animation: drift 15s infinite alternate;
+}
+
+/* Orb 2: Or */
+.orb-2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    position: absolute;
+    bottom: -100px;
+    right: -100px;
+    animation: drift 20s infinite alternate-reverse;
+}
+
+@keyframes drift {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+        transform: translate(50px, 30px) scale(1.1);
+    }
+}
+
+.auth-box {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 10;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+
+/* --- Dashboard --- */
+.dashboard-main {
+    padding: 80px 0;
+}
+
+.balance-showcase {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.balance-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    /* Regular Playfair */
+    font-style: italic;
+    color: var(--gold-main);
+    opacity: 0.9;
+    margin-bottom: 5px;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+}
+
+.balance-value {
+    font-family: var(--font-heading);
+    font-size: 5.5rem;
+    font-weight: 800;
+
+    /* Dégradé métallique Or et Blanc pour le texte */
+    background: linear-gradient(180deg, #ffffff 10%, #FFD700 60%, #B8860B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+
+    /* Ombre portée violette pour le contraste */
+    filter: drop-shadow(0 0 15px rgba(123, 0, 255, 0.3));
+}
+
+.currency-symbol {
+    font-size: 2.5rem;
+    color: var(--violet-glow);
+    vertical-align: top;
+    margin-left: 10px;
+    filter: drop-shadow(0 0 5px var(--violet-main));
+}
+
+.balance-digit {
+    display: inline-block;
+    width: 0.8em;
+    /* Plus large pour éviter le chevauchement avec Orbitron */
+    text-align: center;
+}
+
+.balance-sep {
+    display: inline-block;
+    width: 0.4em;
+    /* Séparateur plus visible */
+    text-align: center;
+}
+
+/* --- Admin Tables --- */
+.table-responsive {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+th {
+    background: rgba(123, 0, 255, 0.1);
+    color: var(--gold-main);
+    padding: 15px;
+    font-size: 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--violet-main);
+}
+
+td {
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}

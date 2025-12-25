@@ -1,0 +1,396 @@
+<?php
+require_once '../../includes/init.php';
+require_once '../../includes/blackjack_functions.php';
+
+// Admin seulement
+if (!isLoggedIn() || !isAdmin()) {
+    redirect('../../pages/login.php');
+}
+
+$tableId = intval($_GET['id'] ?? 0);
+if (!$tableId) {
+    redirect('index.php');
+}
+
+$table = getTableState($tableId, true); // true = voir les cartes cachées
+if (!$table) {
+    redirect('index.php');
+}
+
+require_once '../../includes/header.php';
+?>
+
+<style>
+    .dealer-zone,
+    .player-zone {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .cards-display {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 15px 0;
+    }
+
+    .card-item {
+        width: 60px;
+        height: 85px;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-item.hearts,
+    .card-item.diamonds {
+        color: #dc3545;
+    }
+
+    .card-item.clubs,
+    .card-item.spades {
+        color: #333;
+    }
+
+    .card-item.hidden {
+        background: linear-gradient(135deg, #1a0b2e, #2a1b3e);
+        color: white;
+    }
+
+    .player-seat {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .player-seat.active {
+        border-color: var(--gold-main);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+    }
+
+    .player-seat.bust {
+        opacity: 0.5;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+
+    .status-badge {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+</style>
+
+<main class="dashboard-main">
+    <div class="container">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div>
+                <a href="index.php" style="color: var(--text-muted);">← Dashboard</a>
+                <h1 style="font-size: 1.8rem; margin-top: 10px;"><?= htmlspecialchars($table['name']) ?></h1>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <!-- Mode Streameur Toggle -->
+                <form method="POST" action="api/toggle_streamer.php" style="display: inline;">
+                    <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                    <button type="submit" class="btn <?= $table['streamer_mode'] ? 'btn-gold' : 'btn-outline' ?>"
+                        style="padding: 10px 15px;">
+                        📺 Mode Streameur <?= $table['streamer_mode'] ? 'ON' : 'OFF' ?>
+                    </button>
+                </form>
+
+                <?php if ($table['streamer_mode']): ?>
+                    <button
+                        onclick="window.open('dealer_peek.php?id=<?= $tableId ?>', 'DealerPeek', 'width=450,height=350')"
+                        class="btn btn-outline" style="padding: 10px 15px;">
+                        👁️ Dealer Peek
+                    </button>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Statut de la table -->
+        <div style="margin-bottom: 30px; display: flex; gap: 20px; align-items: center;">
+            <span style="color: var(--text-muted);">STATUT:</span>
+            <span class="status-badge" style="
+                background: <?php echo match ($table['status']) {
+                    'waiting' => 'rgba(255,255,255,0.1)',
+                    'betting' => 'rgba(255,183,0,0.3)',
+                    'playing' => 'rgba(0,255,127,0.3)',
+                    'finished' => 'rgba(255,0,64,0.3)',
+                    default => 'rgba(255,255,255,0.1)'
+                }; ?>;
+                color: <?php echo match ($table['status']) {
+                    'betting' => 'var(--warning)',
+                    'playing' => 'var(--success)',
+                    'finished' => 'var(--danger)',
+                    default => 'var(--text-muted)'
+                }; ?>;
+                font-size: 1rem; padding: 8px 15px;">
+                <?= strtoupper($table['status']) ?>
+            </span>
+
+            <?php if ($table['status'] === 'betting'): ?>
+                <form method="POST" action="api/close_betting.php" style="display: inline;">
+                    <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                    <button type="submit" class="btn btn-primary"
+                        onclick="return confirm('Clôturer les mises et démarrer la partie ?');">
+                        🚫 CLÔTURER LES MISES
+                    </button>
+                </form>
+            <?php endif; ?>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+
+            <!-- Zone Croupier -->
+            <div class="dealer-zone">
+                <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--gold-main);">🎩 CROUPIER</h2>
+
+                <div class="cards-display">
+                    <?php if (empty($table['dealer_cards'])): ?>
+                        <span style="color: var(--text-muted);">Aucune carte</span>
+                    <?php else: ?>
+                        <?php foreach ($table['dealer_cards'] as $card): ?>
+                            <div class="card-item <?= $card['suit'] ?>">
+                                <?php if ($card['suit'] === 'hidden'): ?>
+                                    ?
+                                <?php else: ?>
+                                    <?= $card['value'] ?>            <?php
+                                                  echo match ($card['suit']) {
+                                                      'hearts' => '♥',
+                                                      'diamonds' => '♦',
+                                                      'clubs' => '♣',
+                                                      'spades' => '♠',
+                                                      default => ''
+                                                  };
+                                                  ?>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
+                <div style="color: var(--text-muted);">
+                    Valeur: <strong style="color: white;"><?= $table['dealer_value'] ?></strong>
+                </div>
+
+                <?php if ($table['status'] === 'playing'): ?>
+                    <div class="action-buttons">
+                        <form method="POST" action="api/deal_cards.php" style="display: inline;">
+                            <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                            <input type="hidden" name="target" value="dealer">
+                            <button type="submit" class="btn btn-outline">🃏 Tirer une carte</button>
+                        </form>
+
+                        <form method="POST" action="api/end_round.php" style="display: inline;">
+                            <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                            <button type="submit" class="btn btn-gold"
+                                onclick="return confirm('Terminer la manche et calculer les gains ?');">
+                                ✅ TERMINER LA MANCHE
+                            </button>
+                        </form>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Zone Contrôles -->
+            <div class="dealer-zone">
+                <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--gold-main);">🎮 CONTRÔLES</h2>
+
+                <?php if ($table['status'] === 'playing' && empty($table['dealer_cards'])): ?>
+                    <form method="POST" action="api/deal_cards.php">
+                        <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                        <input type="hidden" name="action" value="initial_deal">
+                        <button type="submit" class="btn btn-gold" style="width: 100%; margin-bottom: 15px;">
+                            🃏 DISTRIBUER LES CARTES INITIALES
+                        </button>
+                    </form>
+                <?php endif; ?>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">BANQUE CASINO</div>
+                    <div
+                        style="font-size: 1.5rem; font-weight: bold; color: <?= $table['casino_balance'] >= 0 ? 'var(--success)' : 'var(--danger)' ?>;">
+                        <?= number_format($table['casino_balance'], 0, ',', ' ') ?> 🪙
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Joueurs -->
+        <div class="card" style="margin-top: 30px;">
+            <h2 style="font-size: 1.2rem; margin-bottom: 20px;">👥 JOUEURS (<?= count($table['players']) ?>/5)</h2>
+
+            <?php if (empty($table['players'])): ?>
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    Aucun joueur n'a rejoint la table.
+                </div>
+            <?php else: ?>
+                <?php foreach ($table['players'] as $player): ?>
+                    <div
+                        class="player-seat <?= $player['seat_number'] == $table['current_player_seat'] ? 'active' : '' ?> <?= $player['status'] === 'bust' ? 'bust' : '' ?>">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="font-size: 1.1rem;"><?= htmlspecialchars($player['twitch_username']) ?></strong>
+                                <span style="color: var(--text-muted); margin-left: 10px;">Siège
+                                    #<?= $player['seat_number'] ?></span>
+                            </div>
+                            <div>
+                                <span style="color: var(--gold-main); font-weight: bold;">💰
+                                    <?= number_format($player['bet_amount']) ?></span>
+                                <?php if ($player['doubled']): ?>
+                                    <span style="color: var(--warning); margin-left: 10px;">x2</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <div class="cards-display">
+                            <?php if (empty($player['cards'])): ?>
+                                <span style="color: var(--text-muted);">Pas encore de cartes</span>
+                            <?php else: ?>
+                                <?php foreach ($player['cards'] as $card): ?>
+                                    <div class="card-item <?= $card['suit'] ?>">
+                                        <?= $card['value'] ?>                <?php
+                                                          echo match ($card['suit']) {
+                                                              'hearts' => '♥',
+                                                              'diamonds' => '♦',
+                                                              'clubs' => '♣',
+                                                              'spades' => '♠',
+                                                              default => ''
+                                                          };
+                                                          ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text-muted);">
+                                Valeur: <strong style="color: white;"><?= $player['hand_value'] ?></strong>
+                                <?php if ($player['hand_value'] > 21): ?>
+                                    <span style="color: var(--danger); margin-left: 10px;">BUST!</span>
+                                <?php elseif (isBlackjack($player['cards'])): ?>
+                                    <span style="color: var(--gold-main); margin-left: 10px;">BLACKJACK!</span>
+                                <?php endif; ?>
+                            </span>
+
+                            <span class="status-badge" style="
+                                background: <?php echo match ($player['status']) {
+                                    'betting' => 'rgba(255,183,0,0.2)',
+                                    'playing' => 'rgba(0,255,127,0.2)',
+                                    'stand' => 'rgba(100,100,100,0.2)',
+                                    'bust' => 'rgba(255,0,64,0.2)',
+                                    'blackjack' => 'rgba(255,215,0,0.3)',
+                                    'win' => 'rgba(0,255,127,0.3)',
+                                    'lose' => 'rgba(255,0,64,0.2)',
+                                    'push' => 'rgba(255,255,255,0.1)',
+                                    default => 'rgba(255,255,255,0.1)'
+                                }; ?>;
+                                color: <?php echo match ($player['status']) {
+                                    'betting' => 'var(--warning)',
+                                    'playing' => 'var(--success)',
+                                    'stand' => 'var(--text-muted)',
+                                    'bust', 'lose' => 'var(--danger)',
+                                    'blackjack', 'win' => 'var(--success)',
+                                    default => 'var(--text-muted)'
+                                }; ?>;">
+                                <?= strtoupper($player['status']) ?>
+                            </span>
+                        </div>
+
+                        <?php if ($table['status'] === 'playing' && $player['status'] === 'playing'): ?>
+                            <div class="action-buttons">
+                                <form method="POST" action="api/deal_cards.php" style="display: inline;">
+                                    <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                                    <input type="hidden" name="target" value="player">
+                                    <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
+                                    <button type="submit" class="btn btn-outline" style="padding: 8px 15px;">🃏 HIT</button>
+                                </form>
+
+                                <form method="POST" action="api/player_action.php" style="display: inline;">
+                                    <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                                    <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
+                                    <input type="hidden" name="action" value="stand">
+                                    <button type="submit" class="btn btn-outline" style="padding: 8px 15px;">✋ STAND</button>
+                                </form>
+
+                                <?php if (count($player['cards']) === 2 && !$player['doubled']): ?>
+                                    <form method="POST" action="api/player_action.php" style="display: inline;">
+                                        <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                                        <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
+                                        <input type="hidden" name="action" value="double">
+                                        <button type="submit" class="btn btn-gold" style="padding: 8px 15px;">💰 DOUBLE</button>
+                                    </form>
+                                <?php endif; ?>
+
+                                <?php if (canSplit($player['cards']) && !$player['has_split']): ?>
+                                    <form method="POST" action="api/player_action.php" style="display: inline;">
+                                        <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                                        <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
+                                        <input type="hidden" name="action" value="split">
+                                        <button type="submit" class="btn btn-primary" style="padding: 8px 15px;">✌️ SPLIT</button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($player['has_split']): ?>
+                            <!-- Afficher la main splittée -->
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                                <strong style="color: var(--violet-glow);">Main Splittée:</strong>
+                                <div class="cards-display">
+                                    <?php
+                                    $splitCards = json_decode($player['split_cards'], true) ?? [];
+                                    foreach ($splitCards as $card): ?>
+                                        <div class="card-item <?= $card['suit'] ?>">
+                                            <?= $card['value'] ?>                <?php
+                                                              echo match ($card['suit']) {
+                                                                  'hearts' => '♥',
+                                                                  'diamonds' => '♦',
+                                                                  'clubs' => '♣',
+                                                                  'spades' => '♠',
+                                                                  default => ''
+                                                              };
+                                                              ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <span style="color: var(--text-muted);">
+                                    Valeur: <strong style="color: white;"><?= calculateHandValue($splitCards) ?></strong>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // Auto-refresh toutes les 3 secondes
+    setInterval(() => {
+        // Pour l'instant, simple refresh - sera remplacé par SSE
+        // location.reload();
+    }, 3000);
+</script>
+
+<?php require_once '../../includes/footer.php'; ?>

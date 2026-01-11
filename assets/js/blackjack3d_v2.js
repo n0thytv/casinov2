@@ -119,21 +119,32 @@ class Blackjack3D {
         const stack = document.createElement('div');
         stack.className = 'chip-stack';
 
-        const chipValues = [100, 50, 25, 10, 5];
+        // Extended chip values for larger bets
+        const chipValues = [1000, 500, 100, 50, 25, 10];
         let remaining = amount;
         let yOffset = 0;
         let chipCount = 0;
+        const maxChips = 15; // Allow more chips for larger bets
 
         for (const val of chipValues) {
-            while (remaining >= val && chipCount < 8) {
+            while (remaining >= val && chipCount < maxChips) {
                 const chip = document.createElement('div');
                 chip.className = `chip chip-${val}`;
-                chip.textContent = val;
+                chip.textContent = val >= 1000 ? (val / 1000) + 'K' : val;
                 chip.style.bottom = `${yOffset}px`;
+                chip.style.zIndex = chipCount;
                 stack.appendChild(chip);
-                yOffset += 4;
+                yOffset += 3; // Slightly tighter stacking
                 remaining -= val;
                 chipCount++;
+            }
+        }
+
+        // Show remaining amount if chips couldn't represent it all
+        if (remaining > 0 && chipCount > 0) {
+            const lastChip = stack.lastChild;
+            if (lastChip) {
+                lastChip.textContent = '+';
             }
         }
 
@@ -163,6 +174,23 @@ class Blackjack3D {
             console.log('🃏 Cards dealt:', oldCardCount, '→', newCardCount, '- reloading page');
             location.reload();
             return;
+        }
+
+        // Check if current_hand changed for any player (split hand switch) - reload to sync PHP UI
+        if (this.gameState?.players && newState?.players) {
+            for (let i = 0; i < newState.players.length; i++) {
+                const oldPlayer = this.gameState.players[i];
+                const newPlayer = newState.players[i];
+                if (oldPlayer && newPlayer && oldPlayer.id === newPlayer.id) {
+                    const oldHand = oldPlayer.current_hand || 'main';
+                    const newHand = newPlayer.current_hand || 'main';
+                    if (oldHand !== newHand) {
+                        console.log('🔄 Player hand switched from', oldHand, 'to', newHand, '- reloading page');
+                        location.reload();
+                        return;
+                    }
+                }
+            }
         }
 
         this.lastStateHash = newHash;
@@ -214,15 +242,12 @@ class Blackjack3D {
         }
 
         // Render dealer cards
-        // Second card should be face-down during player turns only
+        // The server already handles card visibility via dealer_cards_visible
         const dealerCardData = this.gameState.dealer_cards_visible || [];
-        const gameStatus = this.gameState.status || '';
-        const showSecondCard = (gameStatus === 'dealer_turn' || gameStatus === 'completed' || gameStatus === 'paying' || gameStatus === 'finished');
 
         dealerCardData.forEach((c, idx) => {
-            // Second card (index 1) is hidden unless it's dealer's turn or game completed
-            const shouldShowCard = (idx === 0) || showSecondCard || c.suit === 'hidden';
-            const faceUp = shouldShowCard && c.suit !== 'hidden';
+            // Server sends 'hidden' suit for face-down cards
+            const faceUp = c.suit !== 'hidden';
 
             const card = this.createCard(c.suit, c.value, faceUp);
             card.classList.add('dealing');
@@ -230,14 +255,14 @@ class Blackjack3D {
             dealerCards.appendChild(card);
         });
 
-        // Update dealer value (show "?" if second card hidden)
+        // Update dealer value (show "?" if any card is hidden)
         const dealerValue = document.getElementById('dealer-value');
         if (dealerValue) {
-            if (showSecondCard || dealerCardData.length <= 1) {
-                dealerValue.textContent = this.gameState.dealer_value || '-';
-            } else {
-                // Only show first card value during player turns
+            const hasHiddenCard = dealerCardData.some(c => c.suit === 'hidden');
+            if (hasHiddenCard) {
                 dealerValue.textContent = '?';
+            } else {
+                dealerValue.textContent = this.gameState.dealer_value || '-';
             }
         }
 
@@ -251,30 +276,108 @@ class Blackjack3D {
 
             if (!playerCardsEl) return;
 
-            // Cards
-            const cards = player.cards || [];
-            cards.forEach((c, idx) => {
-                const card = this.createCard(c.suit, c.value, true);
-                card.classList.add('dealing');
-                card.style.animationDelay = `${idx * 0.15}s`;
-                playerCardsEl.appendChild(card);
-            });
+            // Check if player has split
+            const hasSplit = player.has_split || false;
+            const currentHand = player.current_hand || 'main';
+            const splitCards = player.split_cards || [];
 
-            // Chips
+            if (hasSplit && splitCards.length > 0) {
+                // Split display: stack both hands with clear separation
+                const cards = player.cards || [];
+
+                // Main hand cards (normal position)
+                cards.forEach((c, idx) => {
+                    const card = this.createCard(c.suit, c.value, true);
+                    card.classList.add('dealing');
+                    card.style.animationDelay = `${idx * 0.15}s`;
+                    if (currentHand !== 'main') card.style.opacity = '0.6';
+                    playerCardsEl.appendChild(card);
+                });
+
+                // Divider between hands
+                const divider = document.createElement('div');
+                divider.style.cssText = 'width: 2px; height: 40px; background: gold; margin: 0 5px; border-radius: 2px;';
+                playerCardsEl.appendChild(divider);
+
+                // Split hand cards
+                splitCards.forEach((c, idx) => {
+                    const card = this.createCard(c.suit, c.value, true);
+                    card.classList.add('dealing');
+                    card.style.animationDelay = `${(cards.length + idx) * 0.15}s`;
+                    if (currentHand === 'main') card.style.opacity = '0.6';
+                    if (currentHand === 'split') card.style.boxShadow = '0 0 10px gold';
+                    playerCardsEl.appendChild(card);
+                });
+            } else {
+                // Normal display - no split
+                const cards = player.cards || [];
+                cards.forEach((c, idx) => {
+                    const card = this.createCard(c.suit, c.value, true);
+                    card.classList.add('dealing');
+                    card.style.animationDelay = `${idx * 0.15}s`;
+                    playerCardsEl.appendChild(card);
+                });
+            }
+
+            // Chips - show more for split (double bet)
             if (player.bet_amount > 0 && playerChipsEl) {
                 const chipStack = this.createChipStack(player.bet_amount);
                 playerChipsEl.appendChild(chipStack);
+
+                // If split, add second chip stack for the split bet
+                if (hasSplit) {
+                    const splitChipStack = this.createChipStack(player.bet_amount);
+                    splitChipStack.style.marginLeft = '15px';
+                    playerChipsEl.appendChild(splitChipStack);
+                }
             }
 
-            // Info
+            // Info - show both hand values if split
             if (playerInfo) {
-                playerInfo.innerHTML = `
-                    <div class="username">${player.twitch_username || 'Joueur'}</div>
-                    <div class="hand-value">Main: ${player.hand_value || 0}</div>
-                `;
+                if (hasSplit) {
+                    const mainValue = this.calculateHandValue(player.cards || []);
+                    const splitValue = this.calculateHandValue(splitCards);
+                    playerInfo.innerHTML = `
+                        <div class="username">${player.twitch_username || 'Joueur'}</div>
+                        <div class="hand-value">Main: ${mainValue} | Split: ${splitValue}</div>
+                    `;
+                } else {
+                    playerInfo.innerHTML = `
+                        <div class="username">${player.twitch_username || 'Joueur'}</div>
+                        <div class="hand-value">Main: ${player.hand_value || 0}</div>
+                    `;
+                }
                 playerInfo.style.display = 'block';
             }
         });
+    }
+
+    // Calculate hand value (same logic as PHP)
+    calculateHandValue(cards) {
+        if (!cards || !Array.isArray(cards)) return 0;
+
+        let value = 0;
+        let aces = 0;
+
+        cards.forEach(card => {
+            const cardValue = card.value;
+            if (['J', 'Q', 'K'].includes(cardValue)) {
+                value += 10;
+            } else if (cardValue === 'A') {
+                value += 11;
+                aces++;
+            } else {
+                value += parseInt(cardValue);
+            }
+        });
+
+        // Adjust aces if over 21
+        while (value > 21 && aces > 0) {
+            value -= 10;
+            aces--;
+        }
+
+        return value;
     }
 
     // Animation helper for dealing cards

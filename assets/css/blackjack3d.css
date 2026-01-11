@@ -16,8 +16,9 @@
 /* The Felt Table */
 .blackjack-table {
     position: relative;
-    width: 700px;
-    height: 420px;
+    width: 98%;
+    max-width: 1100px;
+    height: 450px;
     background-image: url('../images/blackjack-table.png');
     background-size: cover;
     background-position: center;
@@ -26,7 +27,7 @@
         0 20px 60px rgba(0, 0, 0, 0.6),
         0 0 100px rgba(0, 100, 0, 0.2),
         inset 0 0 50px rgba(0, 0, 0, 0.3);
-    transform: perspective(1000px) rotateX(35deg) translateY(20px);
+    transform: perspective(1000px) rotateX(20deg) translateY(5px);
     transform-origin: center center;
 }
 
@@ -37,30 +38,48 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 15px;
+    gap: 8px;
     z-index: 10;
 }
 
 .player-areas {
     position: absolute;
-    bottom: 100px;
+    bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 80px;
+    gap: 50px;
     z-index: 10;
+    width: 90%;
+    justify-content: center;
 }
 
 .player-area {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
+    min-width: 80px;
 }
 
 .player-cards {
     display: flex;
+    align-items: center;
     position: relative;
+    min-height: 60px;
+}
+
+/* Remove absolute positioning for chips, let them flow naturally */
+.player-chips {
+    display: flex;
+    justify-content: center;
+}
+
+.player-cards {
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-height: 70px;
 }
 
 .player-cards .card {
@@ -79,9 +98,9 @@
 
 /* Cards - scoped to blackjack container only */
 .blackjack-3d-container .card {
-    width: 65px;
-    height: 95px;
-    border-radius: 8px;
+    width: 55px;
+    height: 80px;
+    border-radius: 6px;
     background: linear-gradient(145deg, #ffffff, #f0f0f0);
     box-shadow:
         3px 5px 15px rgba(0, 0, 0, 0.4),
@@ -89,6 +108,7 @@
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
 }
 
 .blackjack-3d-container .card.face-down {
@@ -181,14 +201,14 @@
 /* Chip Stack - scoped to blackjack container */
 .blackjack-3d-container .chip-stack {
     position: relative;
-    width: 50px;
-    height: 60px;
-    margin-top: 5px;
+    width: 40px;
+    height: 50px;
+    margin-top: 3px;
 }
 
 .blackjack-3d-container .chip-stack .chip {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     position: absolute;
     left: 50%;
@@ -200,11 +220,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: bold;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-    border: 3px dashed rgba(255, 255, 255, 0.5);
+    border: 2px dashed rgba(255, 255, 255, 0.5);
 }
 
 .blackjack-3d-container .chip-5 {
@@ -227,6 +247,21 @@
     background: radial-gradient(circle at 30% 30%, #444444, #111111);
     color: #ffd700;
     text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.blackjack-3d-container .chip-500 {
+    background: radial-gradient(circle at 30% 30%, #9b59b6, #6c3483);
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    font-size: 8px;
+}
+
+.blackjack-3d-container .chip-1000 {
+    background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+    color: #000;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+    font-size: 8px;
+    font-weight: bold;
 }
 
 /* Player Info - scoped to blackjack container */

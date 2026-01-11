@@ -306,6 +306,12 @@ function getTableState($tableId, $includeHiddenCards = false)
         $cardsJson = $player['cards'] ?? '[]';
         $player['cards'] = json_decode($cardsJson, true) ?? [];
         $player['hand_value'] = calculateHandValue($player['cards']);
+
+        // Décoder les cartes splittées si elles existent
+        if ($player['has_split']) {
+            $splitCardsJson = $player['split_cards'] ?? '[]';
+            $player['split_cards'] = json_decode($splitCardsJson, true) ?? [];
+        }
     }
 
     $table['players'] = $players;
@@ -329,38 +335,94 @@ function resolveRound($tableId)
     $dealerBust = $dealerValue > 21;
 
     foreach ($table['players'] as $player) {
-        if ($player['status'] === 'bust') {
-            // Déjà traité - joueur a perdu
-            continue;
-        }
-
-        $playerValue = $player['hand_value'];
-        $betAmount = $player['bet_amount'];
         $twitchUsername = $player['twitch_username'];
         $userId = $player['user_id'];
+        $betAmount = $player['bet_amount'];
+        $totalWinAmount = 0;
 
-        $newStatus = 'lose';
-        $winAmount = 0;
+        // Si le joueur a splitté, traiter les deux mains séparément
+        if ($player['has_split']) {
+            // Traiter la main principale (peut être déjà un array si venant de getTableState)
+            $mainCards = is_array($player['cards']) ? $player['cards'] : (json_decode($player['cards'], true) ?? []);
+            $mainValue = calculateHandValue($mainCards);
+            $mainBust = $mainValue > 21;
 
-        if ($player['status'] === 'blackjack') {
-            // Blackjack paie 3:2
-            $winAmount = intval($betAmount * 2.5);
-            $newStatus = 'blackjack';
-        } elseif ($dealerBust || $playerValue > $dealerValue) {
-            // Joueur gagne
-            $winAmount = $betAmount * 2;
-            $newStatus = 'win';
-        } elseif ($playerValue === $dealerValue) {
-            // Égalité (push) - remboursement
-            $winAmount = $betAmount;
-            $newStatus = 'push';
-        }
-        // Sinon lose - pas de gain
+            $mainWinAmount = 0;
+            if (!$mainBust) {
+                if (isBlackjack($mainCards)) {
+                    $mainWinAmount = intval($betAmount * 2.5); // Blackjack paie 3:2
+                } elseif ($dealerBust || $mainValue > $dealerValue) {
+                    $mainWinAmount = $betAmount * 2;
+                } elseif ($mainValue === $dealerValue) {
+                    $mainWinAmount = $betAmount; // Push
+                }
+            }
 
-        // Payer le joueur
-        if ($winAmount > 0) {
-            addN0thyCoins($twitchUsername, $winAmount);
-            updateCasinoBalance(-$winAmount, $tableId, $userId, $newStatus, "Gain BJ: $winAmount");
+            // Traiter la main splittée (peut être déjà un array si venant de getTableState)
+            $splitCards = is_array($player['split_cards']) ? $player['split_cards'] : (json_decode($player['split_cards'], true) ?? []);
+            $splitValue = calculateHandValue($splitCards);
+            $splitBust = $splitValue > 21;
+
+            $splitWinAmount = 0;
+            if (!$splitBust) {
+                if (isBlackjack($splitCards)) {
+                    $splitWinAmount = intval($betAmount * 2.5); // Blackjack paie 3:2
+                } elseif ($dealerBust || $splitValue > $dealerValue) {
+                    $splitWinAmount = $betAmount * 2;
+                } elseif ($splitValue === $dealerValue) {
+                    $splitWinAmount = $betAmount; // Push
+                }
+            }
+
+            $totalWinAmount = $mainWinAmount + $splitWinAmount;
+
+            // Déterminer le statut global
+            if ($mainBust && $splitBust) {
+                $newStatus = 'lose';
+            } elseif ($mainWinAmount > $betAmount || $splitWinAmount > $betAmount) {
+                $newStatus = 'win';
+            } elseif ($totalWinAmount > 0) {
+                $newStatus = 'push';
+            } else {
+                $newStatus = 'lose';
+            }
+
+            // Payer le joueur
+            if ($totalWinAmount > 0) {
+                addN0thyCoins($twitchUsername, $totalWinAmount);
+                updateCasinoBalance(-$totalWinAmount, $tableId, $userId, $newStatus, "Gain BJ Split: $totalWinAmount");
+            }
+
+        } else {
+            // Pas de split - comportement normal
+            if ($player['status'] === 'bust') {
+                // Déjà traité - joueur a perdu
+                $newStatus = 'lose';
+            } else {
+                $playerValue = $player['hand_value'];
+                $newStatus = 'lose';
+                $winAmount = 0;
+
+                if ($player['status'] === 'blackjack') {
+                    // Blackjack paie 3:2
+                    $winAmount = intval($betAmount * 2.5);
+                    $newStatus = 'blackjack';
+                } elseif ($dealerBust || $playerValue > $dealerValue) {
+                    // Joueur gagne
+                    $winAmount = $betAmount * 2;
+                    $newStatus = 'win';
+                } elseif ($playerValue === $dealerValue) {
+                    // Égalité (push) - remboursement
+                    $winAmount = $betAmount;
+                    $newStatus = 'push';
+                }
+
+                // Payer le joueur
+                if ($winAmount > 0) {
+                    addN0thyCoins($twitchUsername, $winAmount);
+                    updateCasinoBalance(-$winAmount, $tableId, $userId, $newStatus, "Gain BJ: $winAmount");
+                }
+            }
         }
 
         // Mettre à jour le statut du joueur

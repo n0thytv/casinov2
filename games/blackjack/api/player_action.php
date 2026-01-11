@@ -74,7 +74,18 @@ if (!empty($player['pending_action'])) {
     die(json_encode(['success' => false, 'error' => 'Une action est déjà en attente']));
 }
 
-$cardsJson = $player['cards'] ?? '[]';
+// Déterminer quelle main est active si le joueur a splitté
+$currentHand = $player['current_hand'] ?? 'main';
+$hasSplit = $player['has_split'] ?? false;
+
+if ($hasSplit && $currentHand === 'split') {
+    // Le joueur joue sur la main splittée
+    $cardsJson = $player['split_cards'] ?? '[]';
+} else {
+    // Le joueur joue sur la main principale (ou n'a pas splitté)
+    $cardsJson = $player['cards'] ?? '[]';
+}
+
 $cards = json_decode($cardsJson, true) ?? [];
 $cardCount = count($cards);
 $handValue = calculateHandValue($cards);
@@ -93,6 +104,10 @@ switch ($action) {
         }
         if ($player['doubled']) {
             die(json_encode(['success' => false, 'error' => 'Vous avez déjà doublé']));
+        }
+        // Ne pas permettre de doubler après un split
+        if ($hasSplit) {
+            die(json_encode(['success' => false, 'error' => 'Impossible de doubler après un split']));
         }
         break;
 

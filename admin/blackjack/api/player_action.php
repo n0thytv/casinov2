@@ -38,9 +38,16 @@ $cards = json_decode($player['cards'], true) ?? [];
 
 switch ($action) {
     case 'stand':
-        // Le joueur reste
-        $stmt = $db->prepare("UPDATE blackjack_players SET status = 'stand' WHERE id = ?");
-        $stmt->execute([$playerId]);
+        // Si le joueur a splitté et est sur la main principale, passer à la main splittée
+        if ($player['has_split'] && ($player['current_hand'] ?? 'main') === 'main') {
+            // Passer à la main splittée - GARDER le statut 'playing'
+            $stmt = $db->prepare("UPDATE blackjack_players SET current_hand = 'split', status = 'playing' WHERE id = ?");
+            $stmt->execute([$playerId]);
+        } else {
+            // Sinon, stand final
+            $stmt = $db->prepare("UPDATE blackjack_players SET status = 'stand' WHERE id = ?");
+            $stmt->execute([$playerId]);
+        }
         break;
 
     case 'double':
@@ -90,8 +97,25 @@ switch ($action) {
         $mainHand = [$cards[0]];
         $splitHand = [$cards[1]];
 
-        $stmt = $db->prepare("UPDATE blackjack_players SET cards = ?, split_cards = ?, has_split = TRUE, current_hand = 'main' WHERE id = ?");
-        $stmt->execute([json_encode($mainHand), json_encode($splitHand), $playerId]);
+        // Distribuer une carte sur chaque main
+        $newCardMain = drawCardFromTable($tableId);
+        $mainHand[] = $newCardMain;
+
+        $newCardSplit = drawCardFromTable($tableId);
+        $splitHand[] = $newCardSplit;
+
+        // Vérifier si blackjack sur la main principale (21 après distribution)
+        $mainHandValue = calculateHandValue($mainHand);
+
+        // Si la main principale a 21, passer directement à la main splittée
+        if ($mainHandValue >= 21) {
+            $currentHand = 'split';
+        } else {
+            $currentHand = 'main';
+        }
+
+        $stmt = $db->prepare("UPDATE blackjack_players SET cards = ?, split_cards = ?, has_split = TRUE, current_hand = ?, status = 'playing' WHERE id = ?");
+        $stmt->execute([json_encode($mainHand), json_encode($splitHand), $currentHand, $playerId]);
         break;
 }
 

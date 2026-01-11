@@ -303,6 +303,13 @@ require_once '../../includes/header.php';
                             </div>
                         </div>
 
+                        <?php if ($player['has_split']): ?>
+                            <div style="margin-bottom: 10px;">
+                                <strong style="color: var(--violet-glow);">Main Principale
+                                    <?= ($player['current_hand'] ?? 'main') === 'main' ? '👈 ACTIVE' : '' ?></strong>
+                            </div>
+                        <?php endif; ?>
+
                         <div class="cards-display">
                             <?php if (empty($player['cards'])): ?>
                                 <span style="color: var(--text-muted);">Pas encore de cartes</span>
@@ -394,27 +401,49 @@ require_once '../../includes/header.php';
                         <?php if ($player['has_split']): ?>
                             <!-- Afficher la main splittée -->
                             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1);">
-                                <strong style="color: var(--violet-glow);">Main Splittée:</strong>
+                                <strong style="color: var(--violet-glow);">Main Splittée
+                                    <?= ($player['current_hand'] ?? 'main') === 'split' ? '👈 ACTIVE' : '' ?></strong>
                                 <div class="cards-display">
                                     <?php
-                                    $splitCards = json_decode($player['split_cards'], true) ?? [];
-                                    foreach ($splitCards as $card): ?>
-                                        <div class="card-item <?= $card['suit'] ?>">
-                                            <?= $card['value'] ?>                 <?php
-                                                               echo match ($card['suit']) {
-                                                                   'hearts' => '♥',
-                                                                   'diamonds' => '♦',
-                                                                   'clubs' => '♣',
-                                                                   'spades' => '♠',
-                                                                   default => ''
-                                                               };
-                                                               ?>
-                                        </div>
-                                    <?php endforeach; ?>
+                                    // split_cards est déjà décodé par getTableState()
+                                    $splitCards = is_array($player['split_cards']) ? $player['split_cards'] : (json_decode($player['split_cards'], true) ?? []);
+                                    if (!empty($splitCards)):
+                                        foreach ($splitCards as $card): ?>
+                                            <div class="card-item <?= $card['suit'] ?>">
+                                                <?= $card['value'] ?>                     <?php
+                                                                       echo match ($card['suit']) {
+                                                                           'hearts' => '♥',
+                                                                           'diamonds' => '♦',
+                                                                           'clubs' => '♣',
+                                                                           'spades' => '♠',
+                                                                           default => ''
+                                                                       };
+                                                                       ?>
+                                            </div>
+                                        <?php endforeach;
+                                    else: ?>
+                                        <span style="color: var(--text-muted);">Aucune carte</span>
+                                    <?php endif; ?>
                                 </div>
                                 <span style="color: var(--text-muted);">
-                                    Valeur: <strong style="color: white;"><?= calculateHandValue($splitCards) ?></strong>
+                                    Valeur: <strong
+                                        style="color: white;"><?= !empty($splitCards) ? calculateHandValue($splitCards) : 0 ?></strong>
+                                    <?php if (!empty($splitCards) && calculateHandValue($splitCards) > 21): ?>
+                                        <span style="color: var(--danger); margin-left: 10px;">BUST!</span>
+                                    <?php endif; ?>
                                 </span>
+
+                                <?php // Bouton pour débloquer une main splittée coincée
+                                            if ($player['status'] !== 'playing' && ($player['current_hand'] ?? 'main') === 'split'): ?>
+                                    <form method="POST" action="api/unlock_split.php" style="margin-top: 10px;">
+                                        <input type="hidden" name="table_id" value="<?= $tableId ?>">
+                                        <input type="hidden" name="player_id" value="<?= $player['id'] ?>">
+                                        <button type="submit" class="btn btn-gold btn-sm" style="font-size: 0.75rem; padding: 5px 10px;"
+                                            onclick="return confirm('Débloquer la main splittée et remettre le joueur en mode playing ?');">
+                                            🔓 Débloquer Split
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                     </div>

@@ -36,7 +36,10 @@ echo json_encode([
             'bet_amount' => $p['bet_amount'],
             'cards' => $p['cards'],
             'status' => $p['status'],
-            'hand_value' => $p['hand_value']
+            'hand_value' => $p['hand_value'],
+            'has_split' => $p['has_split'] ?? false,
+            'split_cards' => $p['split_cards'] ?? [],
+            'current_hand' => $p['current_hand'] ?? 'main'
         ];
     }, $table['players'] ?? [])
 ]);

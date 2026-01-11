@@ -43,12 +43,14 @@ require_once '../../includes/header.php';
     /* Main game layout */
     .game-container {
         display: grid;
-        grid-template-columns: 1fr 320px;
-        gap: 25px;
+        grid-template-columns: 1fr 250px;
+        gap: 15px;
         align-items: start;
+        max-width: 1600px;
+        margin: 0 auto;
     }
 
-    @media (max-width: 1000px) {
+    @media (max-width: 1200px) {
         .game-container {
             grid-template-columns: 1fr;
         }
@@ -527,15 +529,30 @@ require_once '../../includes/header.php';
                             <?php foreach ($table['players'] as $player):
                                 $isMe = $player['user_id'] == $userId;
                                 $isPlaying = $player['status'] === 'playing';
-                                $handValue = $player['hand_value'];
-                                $cardCount = count($player['cards']);
+
+                                // Déterminer quelle main est active
+                                $hasSplit = $player['has_split'] ?? false;
+                                $currentHand = $player['current_hand'] ?? 'main';
+
+                                // Si le joueur a splitté et joue la main splittée
+                                if ($hasSplit && $currentHand === 'split') {
+                                    // split_cards est déjà décodé par getTableState()
+                                    $splitCards = is_array($player['split_cards']) ? $player['split_cards'] : (json_decode($player['split_cards'], true) ?? []);
+                                    $handValue = calculateHandValue($splitCards);
+                                    $cardCount = count($splitCards);
+                                } else {
+                                    // Main principale (ou pas de split)
+                                    $handValue = $player['hand_value'];
+                                    $cardCount = count($player['cards']);
+                                }
+
                                 $pendingAction = $player['pending_action'] ?? null;
                                 $hasPendingAction = !empty($pendingAction);
                                 // Actions seulement possibles si la distribution est terminée ET pas d'action en attente
                                 $canAct = $dealingComplete && $isPlaying && !$hasPendingAction;
                                 $canHit = $canAct && $handValue < 21;
-                                $canDouble = $canAct && $cardCount === 2 && !$player['doubled'];
-                                $canSplit = $canAct && $cardCount === 2 && !$player['has_split'] && canSplit($player['cards']);
+                                $canDouble = $canAct && $cardCount === 2 && !$player['doubled'] && !$hasSplit;
+                                $canSplit = $canAct && $cardCount === 2 && !$hasSplit && canSplit($player['cards']);
                                 $isWinner = in_array($player['status'], ['win', 'blackjack']);
                                 $isLoser = in_array($player['status'], ['lose', 'bust']);
                                 ?>
@@ -560,26 +577,89 @@ require_once '../../includes/header.php';
                                         </div>
                                     </div>
 
-                                    <div class="cards-row">
-                                        <?php if (empty($player['cards'])): ?>
-                                            <span style="color: var(--text-muted); font-size: 0.9rem;">En attente des
-                                                cartes...</span>
-                                        <?php else: ?>
-                                            <?php foreach ($player['cards'] as $card): ?>
-                                                <div class="playing-card <?= $card['suit'] ?>">
-                                                    <?= $card['value'] ?>                 <?php
-                                                                       echo match ($card['suit']) {
-                                                                           'hearts' => '♥',
-                                                                           'diamonds' => '♦',
-                                                                           'clubs' => '♣',
-                                                                           'spades' => '♠',
-                                                                           default => ''
-                                                                       };
-                                                                       ?>
+                                    <?php if ($hasSplit): ?>
+                                        <!-- Affichage des deux mains en cas de split -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                            <!-- Main 1 -->
+                                            <div>
+                                                <div
+                                                    style="margin-bottom: 5px; font-size: 0.8rem; font-weight: bold; color: <?= $currentHand === 'main' ? 'var(--gold-main)' : 'var(--text-muted)' ?>;">
+                                                    Main 1 <?= $currentHand === 'main' ? '👈' : '' ?>
                                                 </div>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </div>
+                                                <div class="cards-row" style="flex-wrap: nowrap; overflow-x: auto;">
+                                                    <?php foreach ($player['cards'] as $card): ?>
+                                                        <div class="playing-card <?= $card['suit'] ?>" style="min-width: 45px;">
+                                                            <?= $card['value'] ?>                 <?php
+                                                                               echo match ($card['suit']) {
+                                                                                   'hearts' => '♥',
+                                                                                   'diamonds' => '♦',
+                                                                                   'clubs' => '♣',
+                                                                                   'spades' => '♠',
+                                                                                   default => ''
+                                                                               };
+                                                                               ?>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <div style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);">
+                                                    <?= $player['hand_value'] ?>
+                                                </div>
+                                            </div>
+
+                                            <!-- Main 2 (Splittée) -->
+                                            <div>
+                                                <div
+                                                    style="margin-bottom: 5px; font-size: 0.8rem; font-weight: bold; color: <?= $currentHand === 'split' ? 'var(--gold-main)' : 'var(--text-muted)' ?>;">
+                                                    Main 2 <?= $currentHand === 'split' ? '👈' : '' ?>
+                                                </div>
+                                                <div class="cards-row" style="flex-wrap: nowrap; overflow-x: auto;">
+                                                    <?php
+                                                    $splitCardsDisplay = [];
+                                                    if (isset($player['split_cards'])) {
+                                                        $splitCardsDisplay = is_array($player['split_cards']) ? $player['split_cards'] : (json_decode($player['split_cards'], true) ?? []);
+                                                    }
+                                                    foreach ($splitCardsDisplay as $card): ?>
+                                                        <div class="playing-card <?= $card['suit'] ?>" style="min-width: 45px;">
+                                                            <?= $card['value'] ?>                 <?php
+                                                                               echo match ($card['suit']) {
+                                                                                   'hearts' => '♥',
+                                                                                   'diamonds' => '♦',
+                                                                                   'clubs' => '♣',
+                                                                                   'spades' => '♠',
+                                                                                   default => ''
+                                                                               };
+                                                                               ?>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <div style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);">
+                                                    <?= !empty($splitCardsDisplay) ? calculateHandValue($splitCardsDisplay) : 0 ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <!-- Affichage normal sans split -->
+                                        <div class="cards-row">
+                                            <?php if (empty($player['cards'])): ?>
+                                                <span style="color: var(--text-muted); font-size: 0.9rem;">En attente des
+                                                    cartes...</span>
+                                            <?php else: ?>
+                                                <?php foreach ($player['cards'] as $card): ?>
+                                                    <div class="playing-card <?= $card['suit'] ?>">
+                                                        <?= $card['value'] ?>                     <?php
+                                                                               echo match ($card['suit']) {
+                                                                                   'hearts' => '♥',
+                                                                                   'diamonds' => '♦',
+                                                                                   'clubs' => '♣',
+                                                                                   'spades' => '♠',
+                                                                                   default => ''
+                                                                               };
+                                                                               ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
 
                                     <?php if (!empty($player['cards'])): ?>
                                         <div style="margin-top: 10px; color: var(--text-muted);">
@@ -660,6 +740,9 @@ require_once '../../includes/header.php';
                                                 style="margin-top: 10px; padding: 15px; background: rgba(255,215,0,0.15); border: 1px solid var(--gold-main); border-radius: 6px; text-align: center;">
                                                 <div style="color: var(--gold-main); font-weight: bold;">
                                                     <?= $actionLabels[$pendingAction] ?>
+                                                    <?php if ($hasSplit): ?>
+                                                        (<?= $currentHand === 'main' ? 'Main 1' : 'Main 2' ?>)
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 5px;">
                                                     ⏳ En attente du croupier...
@@ -814,7 +897,7 @@ require_once '../../includes/header.php';
 
     // Array to track individual chips placed
     let placedChips = [];
-    
+
     function addChipToBet(value) {
         // Check limits
         if (currentBet + value > maxBet) {
@@ -825,53 +908,53 @@ require_once '../../includes/header.php';
             showToast('Solde insuffisant !', 'warning');
             return;
         }
-        
+
         // Add chip to array
         placedChips.push(value);
         currentBet += value;
-        
+
         // Update display
         renderPlacedChips();
         updateBetDisplay();
-        
+
         // Save to server immediately
         saveBetToServer();
     }
-    
+
     function removeChip(index) {
         if (index >= 0 && index < placedChips.length) {
             const value = placedChips[index];
             placedChips.splice(index, 1);
             currentBet -= value;
-            
+
             // Update display
             renderPlacedChips();
             updateBetDisplay();
-            
+
             // Save to server immediately
             saveBetToServer();
         }
     }
-    
+
     function renderPlacedChips() {
         const area = document.getElementById('bet-chips-area');
         const placeholder = document.getElementById('bet-chips-placeholder');
-        
+
         if (!area) return;
-        
+
         // Clear area but keep placeholder hidden if chips exist
         area.innerHTML = '';
-        
+
         if (placedChips.length === 0) {
             area.innerHTML = '<div id="bet-chips-placeholder" style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">Cliquez sur les jetons ci-dessus<br>pour placer votre mise</div>';
             return;
         }
-        
+
         // Render each chip
         placedChips.forEach((value, idx) => {
             const chip = document.createElement('div');
             chip.className = 'chip chip-' + value + ' placed-chip';
-            chip.textContent = value >= 1000 ? (value/1000) + 'K' : value;
+            chip.textContent = value >= 1000 ? (value / 1000) + 'K' : value;
             chip.title = 'Cliquer pour retirer';
             chip.style.cssText = 'cursor: pointer; transform: scale(0.8); transition: transform 0.2s;';
             chip.onclick = () => removeChip(idx);
@@ -887,22 +970,22 @@ require_once '../../includes/header.php';
             display.textContent = currentBet.toLocaleString('fr-FR');
         }
     }
-    
+
     function saveBetToServer() {
         fetch('api/place_bet.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'table_id=' + tableId + '&amount=' + currentBet
         })
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) {
-                console.error('Bet save error:', data.error);
-            }
-        })
-        .catch(err => console.error('Bet save failed:', err));
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Bet save error:', data.error);
+                }
+            })
+            .catch(err => console.error('Bet save failed:', err));
     }
-    
+
     function showToast(message, type = 'info') {
         // Simple toast notification
         const toast = document.createElement('div');
@@ -1000,7 +1083,10 @@ require_once '../../includes/header.php';
             'bet_amount' => $p['bet_amount'],
             'cards' => $p['cards'],
             'status' => $p['status'],
-            'hand_value' => $p['hand_value']
+            'hand_value' => $p['hand_value'],
+            'has_split' => $p['has_split'] ?? false,
+            'split_cards' => $p['split_cards'] ?? [],
+            'current_hand' => $p['current_hand'] ?? 'main'
         ];
     }, $table['players'] ?? [])
     ]) ?>;
